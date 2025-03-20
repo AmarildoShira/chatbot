@@ -26,7 +26,7 @@ class LearningBot:
             json.dump(self.knowledge, file, indent=4)
 
     def find_best_match(self, question):
-        matches = difflib.get_close_matches(question, self.knowledge.keys(), n=1, cutoff=0.87)
+        matches = difflib.get_close_matches(question, self.knowledge.keys(), n=1, cutoff=0.93)
         return matches[0] if matches else None
 
     def ask(self, question):
