@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBot Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 400px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: #007bff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: #007bff;
+            color: white;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background: #e4e4e4;
+        }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #ddd;
+            padding: 10px;
+            background: white;
+        }
+
+        .chat-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .chat-input button {
+            margin-left: 10px;
+            padding: 10px 15px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .chat-input button:hover {
+            background: #0056b3;
+        }
+
+        .learning-container {
+            display: none;
+            padding: 15px;
+            background: #fffae6;
+            border-top: 1px solid #ffd700;
+        }
+
+        .learning-container input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .learning-container button {
+            margin-top: 5px;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: #28a745;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .learning-container button:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">🤖 SmartBot</div>
+        <div class="chat-box" id="chat-box"></div>
+
+        <div class="learning-container" id="learning-container">
+            <h3>Bot nuk e di përgjigjen. Mund të më mësosh?</h3>
+            <input type="text" id="learning-response" placeholder="Shkruaj përgjigjen...">
+            <button onclick="learnResponse()">Mëso</button>
+        </div>
+
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Shkruaj një pyetje..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Dërgo</button>
+        </div>
+    </div>
+
+    <script>
+        let lastQuestion = "";
+
+        function sendMessage() {
+            let userInput = document.getElementById("user-input").value.trim();
+            if (!userInput) return;
+
+            addMessage("Ju", userInput, "user-message");
+            document.getElementById("user-input").value = "";
+
+            fetch("/smartbot/chat/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: userInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage("Bot", data.response, "bot-message");
+
+                if (data.learn) {
+                    document.getElementById("learning-container").style.display = "block";
+                    lastQuestion = userInput;
+                }
+            });
+        }
+
+        function learnResponse() {
+            let learningResponse = document.getElementById("learning-response").value.trim();
+            if (!learningResponse) return;
+
+            addMessage("Ju mësuat", learningResponse, "user-message");
+            document.getElementById("learning-container").style.display = "none";
+            document.getElementById("learning-response").value = "";
+
+            fetch("/smartbot/chat/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: lastQuestion, learning_response: learningResponse })
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage("Bot", data.response, "bot-message");
+            });
+        }
+
+        function addMessage(sender, text, className) {
+            let chatBox = document.getElementById("chat-box");
+            let messageDiv = document.createElement("div");
+            messageDiv.className = `message ${className}`;
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+    </script>
+
+</body>
+</html>
